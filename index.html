@@ -1,604 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgriScan AI</title>
-    <!-- PWA Manifest Link -->
-    <link rel="manifest" href="manifest.json">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #e2e8f0;
-            color: #1f2937;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AgroMitr - AI Crop Yield Prediction</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f9f4;
+      color: #333;
+    }
 
-        .loading-spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: #4f46e5;
-            animation: spin 1s linear infinite;
-        }
+    header {
+      background: #2d6a4f;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+    }
 
-        /* Camera and Canvas Styling */
-        #camera-feed {
-            max-width: 100%;
-            border-radius: 1rem;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
-        }
-        #camera-canvas {
-            display: none;
-        }
+    nav {
+      background: #1b4332;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+    }
 
-        /* How It Works animations */
-        .hw-step {
-            opacity: 0;
-            transform: translateY(18px) scale(0.99);
-            transition: opacity 600ms cubic-bezier(.2,.9,.2,1), transform 600ms cubic-bezier(.2,.9,.2,1);
-        }
-        .hw-step.in-view {
-            opacity: 1;
-            transform: none;
-        }
-        .hw-step:hover {
-            transform: translateY(-6px) scale(1.02);
-        }
-        .icon-bounce {
-            transition: transform 350ms ease;
-        }
-        .hw-step:hover .icon-bounce {
-            transform: translateY(-8px) scale(1.05);
-        }
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin: 0 15px;
+      font-weight: bold;
+    }
 
-        /* About images */
-        .about-img {
-            width: 100%;
-            height: 160px;
-            object-fit: cover;
-            border-radius: 0.75rem;
-            box-shadow: 0 8px 20px rgba(16,24,40,0.08);
-        }
-        /* Integrated panel style (not a floating card) */
-        .floating-card {
-            background: rgba(255,255,255,0.9);
-            border-radius: 0.75rem;
-            border: 1px solid rgba(15,23,42,0.04);
-            padding: 1.25rem;
-            position: relative;
-            z-index: 1;
-            box-shadow: none;
-        }
-        .app-topbar {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 1px solid rgba(15,23,42,0.04);
-            margin-bottom: 0.75rem;
-        }
-        .btn-large {
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
-            padding-top: 0.9rem;
-            padding-bottom: 0.9rem;
-            font-size: 1.05rem;
-        }
+    nav a:hover {
+      text-decoration: underline;
+    }
 
-    </style>
+    section {
+      padding: 40px;
+      text-align: center;
+    }
+
+    .hero {
+      background: url('https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+      color: white;
+      padding: 100px 20px;
+    }
+
+    .hero h2 {
+      font-size: 2.2rem;
+      margin-bottom: 15px;
+      text-shadow: 1px 1px 4px #000;
+    }
+
+    .btn {
+      background: #40916c;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .btn:hover {
+      background: #1b4332;
+    }
+
+    footer {
+      background: #2d6a4f;
+      color: white;
+      text-align: center;
+      padding: 15px;
+      margin-top: 30px;
+    }
+
+    form {
+      margin-top: 20px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+    }
+
+    form label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+
+    form input, form select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    form button {
+      width: 100%;
+      margin-top: 15px;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
-    <!-- Header -->
-    <header class="w-full bg-green-700 text-white shadow-lg">
-        <div class="max-w-6xl mx-auto flex items-center justify-between py-4 px-6">
-            <div class="flex items-center space-x-3">
-                <img src="https://img.icons8.com/fluency/48/000000/plant-under-sun.png" alt="AgriScan Logo" class="h-10 w-10">
-                <span class="text-2xl font-extrabold tracking-tight">AgriScan AI</span>
-            </div>
-            <nav class="hidden md:flex space-x-8">
-                <a href="#how-it-works" class="hover:underline font-semibold">How it Works</a>
-                <a href="#scan" id="scan-link" class="hover:underline font-semibold">Scan</a>
-            </nav>
-        </div>
-    </header>
+<body>
+  <header>
+    <h1>🌱 AgroMitr</h1>
+    <p>AI-Powered Crop Yield Prediction & Optimization</p>
+  </header>
 
-    <!-- Hero Section -->
-    <section class="w-full bg-gradient-to-br from-green-100 via-white to-indigo-100 py-12 px-4 flex flex-col items-center text-center min-h-screen">
-        <h1 class="text-4xl md:text-6xl font-extrabold text-green-800 mb-4">AgriScan AI</h1>
-        <p class="text-xl md:text-2xl text-gray-700 max-w-2xl mb-6">Instantly identify plant diseases, pests, and nutrient deficiencies with a single photo. Empower your farm with AI-driven insights!</p>
-        <div class="flex flex-col md:flex-row gap-4 justify-center mb-8">
-            <a href="#scan" id="get-started-btn" class="px-8 py-4 bg-green-600 text-white font-bold rounded-full shadow-lg hover:bg-green-700 transition-colors duration-200 text-lg flex items-center justify-center space-x-2">
-                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.12-1.12A1 1 0 009 3.293V4H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-5h1a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293L12 3.293A1 1 0 0010.293 3H9.707a1 1 0 00-.707.293l-1.12 1.12A1 1 0 017.586 5H6zM4 7h12v8a2 2 0 01-2 2H6a2 2 0 01-2-2V7z" clip-rule="evenodd"></path></svg>
-                <span>Get Started</span>
-            </a>
-        </div>
-        <img src="https://img.icons8.com/fluency/96/000000/plant-under-sun.png" alt="Hero Plant" class="mx-auto mb-4">
-    </section>
+  <nav>
+    <a href="#about">About</a>
+    <a href="#predict">Prediction</a>
+    <a href="#contact">Contact</a>
+  </nav>
 
-    <!-- How it Works & About will appear after scrolling (moved below main) -->
-        </div>
-    </section>
-    <!-- (carousel removed) -->
+  <section class="hero">
+    <h2>Empowering Farmers with AI-driven Insights</h2>
+    <p>Predict crop yield, optimize resources, and boost productivity with AgroMitr.</p>
+    <button class="btn">Get Started</button>
+  </section>
 
-    <!-- Main App Section -->
-    <main id="scan" class="w-full max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl p-6 md:p-10 space-y-8 flex flex-col items-center -mt-20 md:-mt-28 mb-12">
-        <div class="w-full app-topbar">
-            <div class="flex items-center gap-3">
-                <img src="https://img.icons8.com/fluency/48/000000/plant-under-sun.png" alt="logo" class="h-10 w-10">
-                <div>
-                    <div class="text-lg font-semibold">AgriScan AI</div>
-                    <div class="text-sm text-gray-500">AI-powered plant diagnostics</div>
-                </div>
-            </div>
-            <div class="ml-auto hidden md:block text-sm text-gray-500">Ready to scan</div>
-        </div>
+  <section id="about">
+    <h2>About AgroMitr</h2>
+    <p>
+      AgroMitr is an AI-powered platform that helps farmers and agribusinesses 
+      predict crop yield and optimize farming decisions using weather, soil, and regional data.
+    </p>
+  </section>
 
-        <!-- Main Action Buttons -->
-        <div id="action-buttons-container" class="w-full max-w-sm flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-            <button id="camera-button" class="w-full flex-1 px-8 py-4 bg-green-600 text-white font-bold rounded-full shadow-lg hover:bg-green-700 transition-colors duration-200 text-lg flex items-center justify-center space-x-2 btn-large focus:outline-none focus:ring-4 focus:ring-green-200">
-                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.12-1.12A1 1 0 009 3.293V4H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-5h1a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293L12 3.293A1 1 0 0010.293 3H9.707a1 1 0 00-.707.293l-1.12 1.12A1 1 0 017.586 5H6zM4 7h12v8a2 2 0 01-2 2H6a2 2 0 01-2-2V7z" clip-rule="evenodd"></path></svg>
-                <span>Scan with Camera</span>
-            </button>
-            <label for="image-upload" class="w-full flex-1 px-8 py-4 bg-indigo-600 text-white font-bold rounded-full shadow-lg hover:bg-indigo-700 transition-colors duration-200 text-lg flex items-center justify-center space-x-2 cursor-pointer btn-large focus:outline-none focus:ring-4 focus:ring-indigo-200">
-                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.12-1.12A1 1 0 009 3.293V4H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-5h1a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293L12 3.293A1 1 0 0010.293 3H9.707a1 1 0 00-.707.293l-1.12 1.12A1 1 0 017.586 5H6zM4 7h12v8a2 2 0 01-2 2H6a2 2 0 01-2-2V7z" clip-rule="evenodd"></path></svg>
-                <span>Upload Image</span>
-            </label>
-            <input id="image-upload" type="file" accept="image/png, image/jpeg, image/jpg" class="hidden">
-        </div>
+  <section id="predict">
+    <h2>Try Yield Prediction</h2>
+    <p>Enter your details below to get AI-driven predictions (demo version).</p>
+    <form>
+      <label for="crop">Crop Type:</label>
+      <select id="crop">
+        <option>Wheat</option>
+        <option>Rice</option>
+        <option>Maize</option>
+        <option>Soybean</option>
+      </select>
 
-        <!-- Camera View -->
-        <div id="camera-container" class="hidden flex-col items-center space-y-4 w-full">
-            <video id="camera-feed" class="w-full rounded-2xl" autoplay></video>
-            <canvas id="camera-canvas" class="hidden"></canvas>
-            <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 w-full justify-center">
-                <button id="take-photo-button" class="flex-1 px-8 py-4 bg-indigo-600 text-white font-bold rounded-full shadow-lg hover:bg-indigo-700 transition-colors duration-200 text-lg">
-                    Take Photo
-                </button>
-                <button id="cancel-camera-button" class="flex-1 px-8 py-4 bg-gray-200 text-gray-800 font-bold rounded-full shadow-md hover:bg-gray-300 transition-colors duration-200 text-lg">
-                    Cancel
-                </button>
-            </div>
-        </div>
+      <label for="region">Region:</label>
+      <input type="text" id="region" placeholder="e.g., Punjab, India" />
 
-        <!-- Image Preview and Analyze/Scan Another Button -->
-        <div id="preview-container" class="hidden flex flex-col items-center space-y-8 w-full">
-            <img id="image-preview" src="#" alt="Image preview" class="max-w-full h-auto rounded-xl shadow-lg border-2 border-gray-200">
-            <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 w-full justify-center">
-                <button id="analyze-button" class="flex-1 px-8 py-4 bg-indigo-600 text-white font-bold rounded-full shadow-lg hover:bg-indigo-700 transition-colors duration-200 text-lg">
-                    Analyze Plant
-                </button>
-                <button id="scan-another-button" class="flex-1 px-8 py-4 bg-gray-200 text-gray-800 font-bold rounded-full shadow-md hover:bg-gray-300 transition-colors duration-200 text-lg">
-                    Scan Another Image
-                </button>
-            </div>
-        </div>
+      <label for="area">Farming Area (in acres):</label>
+      <input type="number" id="area" placeholder="Enter area" />
 
-        <!-- Status and Results Area -->
-        <div id="status-area" class="w-full mt-6 space-y-6">
-            <div id="loading-message" class="hidden flex flex-col items-center justify-center space-y-3 text-gray-600">
-                <div class="loading-spinner"></div>
-                <span class="text-lg font-medium">Analyzing... This may take a moment.</span>
-            </div>
-            
-            <div id="result-message" class="hidden w-full bg-white rounded-2xl shadow-xl p-6 md:p-8 space-y-6 border-t-4 border-t-green-500">
-                <div class="flex items-center space-x-3 text-green-700">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <h2 class="text-2xl font-bold">Analysis Results</h2>
-                </div>
-                <div id="analysis-content" class="text-gray-700 leading-relaxed space-y-4"></div>
-            </div>
+      <button type="button" class="btn" onclick="predict()">Predict Yield</button>
+    </form>
 
-            <div id="error-message" class="hidden w-full bg-red-50 text-red-700 p-6 rounded-2xl shadow-inner font-medium border-t-4 border-t-red-500"></div>
-        </div>
-    </main>
+    <p id="result" style="margin-top:20px; font-weight:bold; color:#1b4332;"></p>
+  </section>
 
-    <!-- How it Works & About: appears after main content -->
-    <section id="how-it-works" class="max-w-6xl mx-auto px-4 mt-28 md:mt-36">
-        <div class="floating-card max-w-6xl mx-auto p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
-            <!-- Left: How It Works -->
-            <div>
-                <h2 class="text-3xl font-bold text-green-700 mb-6">How It Works</h2>
-                <p class="text-gray-600 mb-6">A simple 3-step process to diagnose and treat your crops with confidence.</p>
-                <div class="grid grid-cols-1 gap-6">
-                    <div class="hw-step bg-white rounded-2xl shadow-sm p-6 flex items-start gap-4">
-                        <div class="flex-shrink-0 bg-green-50 rounded-full p-3">
-                            <img src="https://img.icons8.com/fluency/36/000000/camera.png" alt="Step 1" class="icon-bounce">
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold">1. Capture or Upload</h3>
-                            <p class="text-gray-600">Take a photo of your plant or upload an existing image for analysis.</p>
-                        </div>
-                    </div>
-                    <div class="hw-step bg-white rounded-2xl shadow-sm p-6 flex items-start gap-4">
-                        <div class="flex-shrink-0 bg-green-50 rounded-full p-3">
-                            <img src="https://img.icons8.com/fluency/36/000000/artificial-intelligence.png" alt="Step 2" class="icon-bounce">
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold">2. AI Analysis</h3>
-                            <p class="text-gray-600">Our AI examines the image for disease, pests, and nutrient issues.</p>
-                        </div>
-                    </div>
-                    <div class="hw-step bg-white rounded-2xl shadow-sm p-6 flex items-start gap-4">
-                        <div class="flex-shrink-0 bg-green-50 rounded-full p-3">
-                            <img src="https://img.icons8.com/fluency/36/000000/plant-care.png" alt="Step 3" class="icon-bounce">
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold">3. Get Remedies</h3>
-                            <p class="text-gray-600">Receive clear, actionable recommendations you can apply immediately.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  <section id="contact">
+    <h2>Contact Us</h2>
+    <p>Email: support@agromitr.ai</p>
+    <p>Phone: +91-9876543210</p>
+  </section>
 
-            <!-- Right: About -->
-            <div>
-                <div class="p-6 bg-gradient-to-br from-white to-green-50 rounded-2xl">
-                    <div class="flex items-center gap-4 mb-4">
-                        <img src="https://img.icons8.com/fluency/48/000000/plant-under-sun.png" alt="AgriScan Logo" class="h-12 w-12">
-                        <div>
-                            <h3 class="text-2xl font-bold text-green-700">About AgriScan AI</h3>
-                            <p class="text-sm text-gray-500">Practical diagnostics for healthier crops.</p>
-                        </div>
-                    </div>
-                    <p class="text-gray-600 mb-4">AgriScan AI is a lightweight, privacy-first plant diagnostic tool built for farmers and gardeners. It uses image analysis and agronomic knowledge to detect problems and suggest remedies tailored to smallholders and commercial growers alike.</p>
-                    <ul class="text-gray-600 list-disc pl-5 space-y-2 mb-4">
-                        <li>Fast image-based analysis</li>
-                        <li>Actionable, field-ready recommendations</li>
-                        <li>PWA-enabled for offline access</li>
-                    </ul>
-                    <div class="grid grid-cols-2 gap-3">
-                        <img src="https://images.unsplash.com/photo-1524594154909-6a4f4c9b4c3d?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=abcdef" alt="Farmer in field" class="about-img">
-                        <img src="https://images.unsplash.com/photo-1507668077129-56e32842fceb?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=abcdef" alt="Farmers smiling" class="about-img">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+  <footer>
+    <p>&copy; 2025 AgroMitr | AI for Smarter Farming</p>
+  </footer>
 
-    <script type="module">
-        // Make Get Started and Scan trigger camera scan
-        window.addEventListener('DOMContentLoaded', () => {
-            const getStartedBtn = document.getElementById('get-started-btn');
-                const scanLink = document.getElementById('scan-link');
-                const cameraButton = document.getElementById('camera-button');
-                const footerLogo = document.getElementById('footer-logo');
-                const footerScan = document.getElementById('footer-scan');
-            const scrollToScanThen = (cb) => {
-                const mainEl = document.getElementById('scan');
-                if (mainEl) {
-                    mainEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    // give the browser time to scroll and render
-                    setTimeout(cb, 600);
-                } else {
-                    cb();
-                }
-            };
+  <script>
+    function predict() {
+      const crop = document.getElementById("crop").value;
+      const area = document.getElementById("area").value;
+      const region = document.getElementById("region").value;
 
-            if (getStartedBtn && cameraButton) {
-                getStartedBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    scrollToScanThen(() => cameraButton.click());
-                });
-            }
-            if (scanLink && cameraButton) {
-                scanLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    scrollToScanThen(() => cameraButton.click());
-                });
-            }
-            if (footerLogo && cameraButton) {
-                footerLogo.addEventListener('click', () => cameraButton.click());
-            }
-            if (footerScan && cameraButton) {
-                footerScan.addEventListener('click', (e) => { e.preventDefault(); cameraButton.click(); });
-            }
-
-            // Animate How It Works steps when visible
-            try {
-                const hwSteps = document.querySelectorAll('.hw-step');
-                if (hwSteps && hwSteps.length) {
-                    const observer = new IntersectionObserver((entries) => {
-                        entries.forEach(entry => {
-                            if (entry.isIntersecting) entry.target.classList.add('in-view');
-                        });
-                    }, { threshold: 0.2 });
-                    hwSteps.forEach(el => observer.observe(el));
-                }
-            } catch (e) {
-                // ignore if IntersectionObserver not supported
-            }
-        });
-    
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firestore configuration variables (MANDATORY)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let db, auth;
-        let userId;
-        let cameraStream;
-
-        setLogLevel('Debug');
-
-        const initializeFirebase = async () => {
-            try {
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                userId = auth.currentUser?.uid || crypto.randomUUID();
-                console.log("Firebase initialized. User ID:", userId);
-            } catch (error) {
-                console.error("Error initializing Firebase:", error);
-            }
-        };
-
-        // UI Elements
-        const uploadInput = document.getElementById('image-upload');
-        const actionButtonsContainer = document.getElementById('action-buttons-container');
-        const cameraButton = document.getElementById('camera-button');
-        const cameraContainer = document.getElementById('camera-container');
-        const cameraFeed = document.getElementById('camera-feed');
-        const cameraCanvas = document.getElementById('camera-canvas');
-        const takePhotoButton = document.getElementById('take-photo-button');
-        const cancelCameraButton = document.getElementById('cancel-camera-button');
-        const previewContainer = document.getElementById('preview-container');
-        const imagePreview = document.getElementById('image-preview');
-        const analyzeButton = document.getElementById('analyze-button');
-        const scanAnotherButton = document.getElementById('scan-another-button');
-        const loadingMessage = document.getElementById('loading-message');
-        const resultMessage = document.getElementById('result-message');
-        const analysisContent = document.getElementById('analysis-content');
-        const errorMessage = document.getElementById('error-message');
-
-        let imageBase64Data = '';
-
-        // Reset the UI to its initial state
-        function resetUI() {
-            actionButtonsContainer.classList.remove('hidden');
-            cameraContainer.classList.add('hidden');
-            previewContainer.classList.add('hidden');
-            clearMessages();
-            imagePreview.src = '#';
-            uploadInput.value = '';
-            imageBase64Data = '';
-            stopCamera();
-        }
-
-        // Event listeners
-        uploadInput.addEventListener('change', handleFileSelect);
-        scanAnotherButton.addEventListener('click', resetUI);
-        cameraButton.addEventListener('click', startCamera);
-        takePhotoButton.addEventListener('click', takePhoto);
-        cancelCameraButton.addEventListener('click', resetUI);
-
-        function handleFileSelect(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                showError('Error: The image file is too large. Please select a file under 5MB.');
-                return;
-            }
-
-            clearMessages();
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
-                    imageBase64Data = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-                    showPreview(event.target.result);
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        async function startCamera() {
-            try {
-                const constraints = {
-                    video: {
-                        facingMode: { ideal: "environment" }
-                    }
-                };
-                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-                cameraFeed.srcObject = cameraStream;
-                actionButtonsContainer.classList.add('hidden');
-                cameraContainer.classList.remove('hidden');
-                clearMessages();
-            } catch (err) {
-                console.error("Error accessing camera:", err);
-                showError('Could not access the camera. Please ensure you have granted permission.');
-            }
-        }
-
-        function takePhoto() {
-            if (!cameraStream) {
-                showError('Camera not active.');
-                return;
-            }
-            cameraCanvas.width = cameraFeed.videoWidth;
-            cameraCanvas.height = cameraFeed.videoHeight;
-            const ctx = cameraCanvas.getContext('2d');
-            ctx.drawImage(cameraFeed, 0, 0, cameraCanvas.width, cameraCanvas.height);
-            const imageURL = cameraCanvas.toDataURL('image/jpeg');
-            imageBase64Data = imageURL.split(',')[1];
-            stopCamera();
-            showPreview(imageURL);
-        }
-
-        function stopCamera() {
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
-        }
-
-        function showPreview(src) {
-            actionButtonsContainer.classList.add('hidden');
-            cameraContainer.classList.add('hidden');
-            previewContainer.classList.remove('hidden');
-            imagePreview.src = src;
-        }
-
-        analyzeButton.addEventListener('click', async () => {
-            if (!imageBase64Data) {
-                showError('Please upload or capture an image first.');
-                return;
-            }
-            clearMessages();
-            loadingMessage.classList.remove('hidden');
-
-            try {
-                const prompt = "You are a professional plant pathologist and agronomist. Analyze the provided image of a plant and identify any signs of disease, pests, or nutrient deficiencies. Provide a clear and concise summary of your findings and suggest possible causes or remedies. Structure your response using markdown with bold headings for '### Analysis' and '### Remedies'. If the plant appears healthy, state that clearly under '### Analysis'. Do not add any extra text or conversation.";
-                const payload = {
-                    contents: [{
-                        parts: [
-                            { text: prompt },
-                            { inlineData: { mimeType: "image/jpeg", data: imageBase64Data } }
-                        ]
-                    }],
-                };
-
-                const apiKey = ""; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error.message || 'API request failed');
-                }
-
-                const result = await response.json();
-                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (text) {
-                    renderResult(text);
-                } else {
-                    showError('Analysis failed. No text response received.');
-                }
-
-            } catch (error) {
-                console.error("Analysis Error:", error);
-                showError('Analysis failed. Please try again.');
-            } finally {
-                loadingMessage.classList.add('hidden');
-            }
-        });
-
-        // Function to render markdown-formatted text into appealing UI
-        function renderResult(markdownText) {
-            analysisContent.innerHTML = '';
-            const sections = markdownText.split('###').filter(s => s.trim() !== '');
-
-            sections.forEach(section => {
-                const [heading, ...content] = section.split('\n');
-                const title = heading.trim();
-                const contentHtml = content.join('\n').trim().replace(/\n/g, '<br>');
-                
-                const sectionDiv = document.createElement('div');
-                sectionDiv.className = 'space-y-2';
-
-                const titleElement = document.createElement('h3');
-                titleElement.className = 'text-xl font-bold text-gray-900';
-                titleElement.textContent = title;
-                sectionDiv.appendChild(titleElement);
-
-                const contentElement = document.createElement('p');
-                contentElement.className = 'text-gray-600';
-                contentElement.innerHTML = contentHtml;
-                sectionDiv.appendChild(contentElement);
-
-                analysisContent.appendChild(sectionDiv);
-            });
-            resultMessage.classList.remove('hidden');
-        }
-
-        function clearMessages() {
-            resultMessage.classList.add('hidden');
-            errorMessage.classList.add('hidden');
-            analysisContent.innerHTML = '';
-            errorMessage.textContent = '';
-        }
-
-        function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.classList.remove('hidden');
-        }
-
-        // Register the service worker for PWA functionality
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js').then(registration => {
-                    console.log('Service Worker registered with scope:', registration.scope);
-                }).catch(err => {
-                    console.log('Service Worker registration failed:', err);
-                });
-            });
-        }
-        
-        // Initialize Firebase on window load
-        window.onload = initializeFirebase;
-    </script>
-
-
-    <!-- Footer -->
-    <footer class="w-full bg-gray-900 text-gray-200 py-6 mt-auto">
-        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between px-6">
-            <div class="flex items-center space-x-2">
-                <img id="footer-logo" src="https://img.icons8.com/fluency/32/000000/plant-under-sun.png" alt="AgriScan Logo (click to scan)" title="Click to Scan" class="h-8 w-8 cursor-pointer">
-                <span class="font-bold">AgriScan AI</span>
-            </div>
-            <div class="text-sm mt-2 md:mt-0">&copy; 2025 AgriScan AI. All rights reserved.</div>
-            <div class="flex space-x-4 mt-2 md:mt-0">
-                <a href="#how-it-works" class="hover:underline">How it Works</a>
-                <a href="#scan" id="footer-scan" class="hover:underline flex items-center gap-2">📷 <span>Scan</span></a>
-                <a href="mailto:support@agriscanaiexample.com" class="hover:underline">Contact</a>
-            </div>
-        </div>
-    </footer>
+      if(area && region) {
+        document.getElementById("result").innerText =
+          `Estimated yield for ${crop} in ${region} on ${area} acres is approx. ${Math.floor(Math.random()*50 + 10)} quintals.`;
+      } else {
+        document.getElementById("result").innerText =
+          "⚠️ Please enter all details.";
+      }
+    }
+  </script>
 </body>
 </html>
